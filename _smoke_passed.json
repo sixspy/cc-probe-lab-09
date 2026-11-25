@@ -1,0 +1,12 @@
+{
+  "label": "probe-09",
+  "port": 8180,
+  "login_url": "http://127.0.0.1:8180/login",
+  "http_status": 200,
+  "checks": [
+    "含登录相关文案",
+    "含密码表单线索"
+  ],
+  "passed": true,
+  "checked_at": "2026-11-25T13:46:36+08:00"
+}
