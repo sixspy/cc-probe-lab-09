@@ -32,8 +32,8 @@ function 安全文本(s) {
   })[c]);
 }
 function 命运色(f) {
-  if (["已入栏", "在栏", "已汇总", "对齐"].includes(f)) return "ok";
-  if (["已坏点", "撕裂"].includes(f)) return "warn";
+  if (["已入栏", "在栏", "已汇总", "对齐", "可信"].includes(f)) return "ok";
+  if (["已坏点", "撕裂", "已偏钟", "偏钟旁路"].includes(f)) return "warn";
   return "";
 }
 function 渲染水位(el, o) {
@@ -49,11 +49,26 @@ function 渲染水位(el, o) {
 function 渲染门槛(el, 规) {
   if (!el) return;
   const r = 规 || {};
+  const 阈 = r["站钟漂移阈秒"];
+  const 阈文 = 阈 === undefined ? "—" : `${Number(阈).toLocaleString()} 秒`;
   el.innerHTML = `
     <div class="门槛卡"><div class="k">当前栏</div><div class="v">${安全文本(r["当前栏号"] || "—")}</div></div>
     <div class="门槛卡"><div class="k">PM25 上限</div><div class="v">${安全文本(r["PM25上限"] || "—")}</div></div>
     <div class="门槛卡"><div class="k">PM25 下限</div><div class="v">${安全文本(r["PM25下限"] || "—")}</div></div>
     <div class="门槛卡"><div class="k">标定偏移</div><div class="v">${安全文本(r["标定偏移上限"] || "—")}</div></div>
+    <div class="门槛卡"><div class="k">站钟漂移阈</div><div class="v">${阈文}</div></div>
+  `;
+}
+async function 渲染漂移条(el) {
+  if (!el) return;
+  const rows = await getJSON("/api/站钟偏移裁决");
+  const 可信 = rows.filter((r) => r.是否可信 === 1 || r.是否可信 === true).length;
+  const 偏钟 = rows.length - 可信;
+  el.innerHTML = `
+    <div class="门槛卡"><div class="k">漂移裁决形态</div><div class="v" style="font-size:14px">甲 · 切流账册</div></div>
+    <div class="门槛卡"><div class="k">可信放行</div><div class="v">${可信}</div></div>
+    <div class="门槛卡"><div class="k">偏钟切流</div><div class="v">${偏钟}</div></div>
+    <div class="门槛卡"><div class="k">分轨规则</div><div class="v" style="font-size:13px">可信入栏 · 偏钟入坏点匣</div></div>
   `;
 }
 function 渲染批次表(el, rows, cols) {
@@ -88,6 +103,6 @@ function 填命运字典(el, dict) {
 }
 window.探栏 = {
   getJSON, postJSON, 行, 徽章, 空态, 安全文本, 命运色,
-  渲染水位, 渲染门槛, 渲染批次表,
+  渲染水位, 渲染门槛, 渲染漂移条, 渲染批次表,
   装载摘要文, 结栏摘要文, 贯验摘要文, 填命运字典,
 };

@@ -48,6 +48,16 @@ async def api_站点():
     return jsonify(目录.站点列表())
 
 
+@app.get("/api/站点源/对账")
+async def api_站点对账():
+    return jsonify(目录.站点对账())
+
+
+@app.get("/api/站钟偏移裁决")
+async def api_偏移裁决():
+    return jsonify(目录.偏移裁决列表())
+
+
 @app.get("/api/观测报文")
 async def api_报文():
     return jsonify(目录.报文列表())
@@ -90,6 +100,14 @@ async def api_夹具装载(name: str):
         return jsonify(装载.装一批(夹具.读取(name)))
     except FileNotFoundError:
         return jsonify({"错误": name}), 404
+
+
+@app.post("/api/演示/偏钟混灌")
+async def api_偏钟演示():
+    """演示用：服务端同票把漂移阈收紧到 600 秒并钉参考仓钟，再灌偏钟混灌夹具。"""
+    体 = 夹具.读取("偏钟混灌样例")
+    目录.改栏规({"站钟漂移阈秒": "600"})
+    return jsonify(装载.装一批(体, 仓时覆盖="2026-11-25T04:00:00Z"))
 
 
 @app.post("/api/结栏/跑")

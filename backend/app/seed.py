@@ -52,6 +52,20 @@ CREATE TABLE IF NOT EXISTS 坏点匣 (
   观测时 TEXT NOT NULL,
   入匣时 TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS 站钟偏移裁决 (
+  编号 INTEGER PRIMARY KEY AUTOINCREMENT,
+  报文编号 TEXT NOT NULL UNIQUE,
+  站点键 TEXT NOT NULL,
+  观测时 TEXT NOT NULL,
+  仓时时 TEXT NOT NULL,
+  漂移秒 REAL NOT NULL,
+  阈值秒 REAL NOT NULL,
+  是否可信 INTEGER NOT NULL,
+  指纹 TEXT NOT NULL DEFAULT '',
+  批次编号 TEXT NOT NULL DEFAULT '',
+  裁决时 TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_站钟裁决_可信 ON 站钟偏移裁决(站点键, 是否可信);
 CREATE TABLE IF NOT EXISTS 栏贯验 (
   编号 INTEGER PRIMARY KEY AUTOINCREMENT,
   时刻 TEXT NOT NULL,
@@ -92,6 +106,7 @@ def 初始化库() -> None:
             "PM25上限": "75",
             "PM25下限": "0",
             "标定偏移上限": "5",
+            "站钟漂移阈秒": "604800",
             "栏策略": "按站点指标汇总均值",
         }.items():
             conn.execute("INSERT INTO 栏规(键,值) VALUES (?,?)", (k, v))

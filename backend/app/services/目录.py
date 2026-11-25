@@ -32,7 +32,60 @@ def 改栏规(体: dict) -> dict:
 def 站点列表() -> list[dict]:
     conn = 连接()
     try:
-        return [dict(r) for r in conn.execute("SELECT * FROM 站点源 ORDER BY 源键").fetchall()]
+        rows = [dict(r) for r in conn.execute("SELECT * FROM 站点源 ORDER BY 源键").fetchall()]
+        对账 = {r["源键"]: r for r in _站点对账(conn)}
+        for r in rows:
+            m = 对账.get(r["源键"])
+            r["可信数"] = m["可信数"] if m else 0
+            r["偏钟数"] = m["偏钟数"] if m else 0
+            r["对账结论"] = m["对账结论"] if m else "无数据"
+        return rows
+    finally:
+        conn.close()
+
+
+def _站点对账(conn) -> list[dict]:
+    rows = conn.execute(
+        """SELECT s.源键,
+                  COALESCE(SUM(CASE WHEN v.是否可信=1 THEN 1 ELSE 0 END),0) AS 可信数,
+                  COALESCE(SUM(CASE WHEN v.是否可信=0 THEN 1 ELSE 0 END),0) AS 偏钟数,
+                  COUNT(v.报文编号) AS 裁决数
+           FROM 站点源 s
+           LEFT JOIN 站钟偏移裁决 v ON v.站点键 = s.源键
+           GROUP BY s.源键 ORDER BY s.源键"""
+    ).fetchall()
+    out = []
+    for r in rows:
+        可, 偏, 总 = int(r["可信数"]), int(r["偏钟数"]), int(r["裁决数"])
+        if 总 == 0:
+            结论 = "无数据"
+        elif 偏 > 0:
+            结论 = "偏钟旁路"
+        else:
+            结论 = "可信"
+        out.append({
+            "源键": r["源键"], "可信数": 可, "偏钟数": 偏, "裁决数": 总, "对账结论": 结论,
+        })
+    return out
+
+
+def 站点对账() -> list[dict]:
+    conn = 连接()
+    try:
+        return _站点对账(conn)
+    finally:
+        conn.close()
+
+
+def 偏移裁决列表(限制: int = 500) -> list[dict]:
+    conn = 连接()
+    try:
+        return [
+            dict(r)
+            for r in conn.execute(
+                "SELECT * FROM 站钟偏移裁决 ORDER BY 编号 DESC LIMIT ?", (限制,)
+            ).fetchall()
+        ]
     finally:
         conn.close()
 

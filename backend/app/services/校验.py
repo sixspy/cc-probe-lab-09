@@ -69,7 +69,7 @@ def 校验栏规补丁(体: dict) -> list[str]:
     if not isinstance(体, dict):
         return ["栏规补丁须为对象"]
     错: list[str] = []
-    for k in ("PM25上限", "PM25下限", "标定偏移上限"):
+    for k in ("PM25上限", "PM25下限", "标定偏移上限", "站钟漂移阈秒"):
         if k in 体:
             try:
                 float(体[k])

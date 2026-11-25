@@ -14,21 +14,34 @@
       <div class="骨">传感报文装载 → 标定/质控门槛入栏 → 站点汇总物化 → 坏点旁路 → 栏账互证<br/>皮：环境监测传感站 · 不是潮切关窗，也不是对拍双轨</div>
     </header>
     <div class="门槛条" id="门槛条"></div>
+    <div class="门槛条" id="漂移条"></div>
     <header class="顶牌" style="margin-bottom:10px">
       <h1 style="font-size:22px">站点源</h1>
-      <div class="骨">传感站登记目录。</div>
+      <div class="骨">传感站登记目录。站钟偏移裁决对账：含偏钟点的站点不得挂“可信”绿。</div>
     </header>
 
     <section class="卷">
-      <div class="表绕"><table><thead><tr><th>源键</th><th>名称</th><th>介质</th><th>区域</th><th>说明</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div class="表绕"><table><thead><tr><th>源键</th><th>名称</th><th>介质</th><th>区域</th><th>可信数</th><th>偏钟数</th><th>漂移裁决</th><th>说明</th></tr></thead><tbody id="表"></tbody></table></div>
     </section>
     <script>
     (async () => {
       const rows = await 探栏.getJSON("/api/站点源");
       const tb = document.getElementById("表");
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.源键)}</td><td>${探栏.安全文本(r.名称)}</td><td>${探栏.安全文本(r.介质)}</td><td>${探栏.安全文本(r.区域)}</td><td>${探栏.安全文本(r.说明)}</td>`));
+        const 结 = r.对账结论 || "无数据";
+        const 类 = 结 === "可信" ? "好" : (结 === "偏钟旁路" ? "警" : "");
+        tb.appendChild(探栏.行(
+          `<td>${探栏.安全文本(r.源键)}</td>` +
+          `<td>${探栏.安全文本(r.名称)}</td>` +
+          `<td>${探栏.安全文本(r.介质)}</td>` +
+          `<td>${探栏.安全文本(r.区域)}</td>` +
+          `<td>${r.可信数 ?? 0}</td>` +
+          `<td>${r.偏钟数 ?? 0}</td>` +
+          `<td>${探栏.徽章(结, 类)}</td>` +
+          `<td>${探栏.安全文本(r.说明)}</td>`
+        ));
       }
+      await 探栏.渲染漂移条(document.getElementById("漂移条"));
     })();
     </script>
 

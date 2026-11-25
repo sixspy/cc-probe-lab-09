@@ -32,6 +32,7 @@
           const body = {
             "PM25上限": document.getElementById("PM25上限")?.value,
             "PM25下限": document.getElementById("PM25下限")?.value,
+            "站钟漂移阈秒": document.getElementById("站钟漂移阈秒")?.value,
           };
           Object.keys(body).forEach((k) => body[k] === undefined && delete body[k]);
           el.textContent = JSON.stringify(await 探栏.postJSON("/api/栏规", body), null, 2);
@@ -60,7 +61,17 @@
         <button class="按钮" id="保存栏规">保存栏规补丁</button>
         <button class="按钮 次" id="刷新栏规">刷新</button>
       </div>
-      <pre class="回执 上距12" id="栏规回执">改门槛只影响后续装载</pre>
+      <div class="双栏 上距12">
+        <label class="只读框">PM25 上限 <input id="PM25上限" type="number" value="75"/></label>
+        <label class="只读框">PM25 下限 <input id="PM25下限" type="number" value="0"/></label>
+        <label class="只读框">站钟漂移阈（秒） <input id="站钟漂移阈秒" type="number" value="604800"/></label>
+      </div>
+      <pre class="回执 上距12" id="栏规回执">改门槛只影响后续装载；阈损坏会让整批装载失败闭，不写一行业务数据</pre>
+    </section>
+    <section class="卷">
+      <h2>站钟漂移裁决</h2>
+      <p class="说明" id="漂移策略">加载中…</p>
+      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>漂移秒</th><th>阈值秒</th><th>裁决</th></tr></thead><tbody id="漂移裁决表"></tbody></table></div>
     </section>
     <section class="卷">
       <h2>夹具预检</h2>
@@ -72,9 +83,27 @@
     </section>
     <script>
     (async () => {
-      document.getElementById("规").textContent = JSON.stringify(await 探栏.getJSON("/api/栏规"), null, 2);
+      const 规 = await 探栏.getJSON("/api/栏规");
+      document.getElementById("规").textContent = JSON.stringify(规, null, 2);
+      if (规["站钟漂移阈秒"] !== undefined) {
+        document.getElementById("站钟漂移阈秒").value = 规["站钟漂移阈秒"];
+      }
       const s = await 探栏.getJSON("/api/空桩");
       document.getElementById("空桩").textContent = "空桩 " + s.条数 + "：" + (s.空桩 || []).join(" · ");
+      document.getElementById("漂移策略").textContent =
+        "形态：甲-切流账册。可信点（漂移≤阈）正式入栏；偏钟超阈点带偏钟指纹切流进坏点匣，并写站钟偏移裁决账册，不做双写双轨。当前阈 " +
+        探栏.安全文本(规["站钟漂移阈秒"] ?? "—") + " 秒。";
+      const 裁决 = await 探栏.getJSON("/api/站钟偏移裁决");
+      const tb = document.getElementById("漂移裁决表");
+      if (!裁决.length) { tb.innerHTML = `<tr><td colspan="5">${探栏.空态("尚无裁决记录。")}</td></tr>`; }
+      for (const v of 裁决.slice(0, 50)) {
+        const 可信 = v.是否可信 === 1 || v.是否可信 === true;
+        tb.appendChild(探栏.行(
+          `<td>${探栏.安全文本(v.报文编号)}</td><td>${探栏.安全文本(v.站点键)}</td>` +
+          `<td>${Number(v.漂移秒).toFixed(1)}</td><td>${Number(v.阈值秒).toFixed(1)}</td>` +
+          `<td>${可信 ? 探栏.徽章("可信","好") : 探栏.徽章("偏钟","警")}</td>`
+        ));
+      }
     })();
     </script>
 
